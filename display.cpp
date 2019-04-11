@@ -9,6 +9,12 @@ LCD::LCD(int nrChannels)
 // pin 4 - LCD chip select (CS)
 // pin 3 - LCD reset (RST)
   display = new Adafruit_PCD8544(7, 6, 5, 4, 3);
+  this->nrChannels = nrChannels;
+  this->channels = new Channel*[nrChannels];
+  this->currentChannel = 0;
+
+  // Let's put the current cursor position to channel-enable
+  this->currentCursorPosition = channel;
 }
 
 void LCD::begin()
@@ -20,15 +26,16 @@ void LCD::begin()
   display->setContrast(60);
   display->setTextWrap(false);
 
-  this->setupChannelBox(1);
-  this->setupChannelBox(2);
+  for(int i=0; i < nrChannels; i++) {
+    this->setupChannelBox(i);
+  }
 
   display->display();
 }
 
 void LCD::setupChannelBox(int channelNr)
 {
-  int verticalOffset = (channelNr-1) * (display->height()/2);
+  int verticalOffset = channelNr * (display->height()/2);
   display->drawRect(0, verticalOffset, display->width(), display->height()/2, BLACK);
   display->setCursor(2,2+verticalOffset);
   display->print("S:");
@@ -41,32 +48,49 @@ void LCD::setupChannelBox(int channelNr)
 
 void LCD::updateChannelBox(Channel* channel)
 {
+  channels[channel->getChannelNr()-1] = channel;
   this->showEnabled(channel);
   this->setWaveformCursor(channel, false);
   this->setFrequencyCursor(channel, 0, false);
   display->display();
 }
 
-void LCD::setCursor(Channel* currentChannel, CursorPosition cursorPosition, bool on)
+void LCD::setCursor(bool on)
 {
-  switch(cursorPosition) {
+  Channel* chan = channels[currentChannel];
+  switch(currentCursorPosition) {
     case channel:
-      this->setChannelCursor(currentChannel, on);
-      this->showEnabled(currentChannel);
+      this->setChannelCursor(chan, on);
+      this->showEnabled(chan);
       break;
     case shape:
-      this->setWaveformCursor(currentChannel, on);
+      this->setWaveformCursor(chan, on);
       break;
     default:
-      this->setFrequencyCursor(currentChannel, cursorPosition-freq1, on);
+      this->setFrequencyCursor(chan, currentCursorPosition-freq1, on);
       break;
   }
   display->display();
 }
 
-CursorPosition LCD::nextCursorPosition(CursorPosition cursorPosition)
+CursorPosition LCD::getCurrentCursorPosition()
 {
-  return (cursorPosition + 1) % NR_CURSORPOSITIONS;
+  return currentCursorPosition;
+}
+
+Channel* LCD::nextCursorPosition()
+{
+  setCursor(false);
+
+  CursorPosition newCursorPosition = (currentCursorPosition + 1) % NR_CURSORPOSITIONS;
+  if (newCursorPosition <= currentCursorPosition) {
+      currentChannel = (currentChannel + 1) % nrChannels;
+  }
+  currentCursorPosition = newCursorPosition;
+
+  setCursor(true);
+  
+  return channels[currentChannel];
 }
 
 void LCD::setChannelCursor(Channel* channel, bool on)

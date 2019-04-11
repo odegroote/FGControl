@@ -6,16 +6,10 @@ Channel::Channel(int channelNr, int8_t pin)
   this->waveform=TRIANGLE_WAVE;
   this->frequency=1000;
   this->enabled = false;
+  //--------------- Create an AD9833 object ---------------- 
+  // Note, SCK and MOSI must be connected to CLK and DAT pins on the AD9833 for SPI
+  // Defaults to 25MHz internal reference frequency
   this->ad9833 = new AD9833(pin);       // Defaults to 25MHz internal reference frequency
-}
-
-Channel::Channel(int channelNr,AD9833* ad9833)
-{
-  this->channelNr = channelNr;
-  this->waveform=TRIANGLE_WAVE;
-  this->frequency=1000;
-  this->enabled = false;
-  this->ad9833 = ad9833;       // Defaults to 25MHz internal reference frequency
 }
 
 void Channel::reset()

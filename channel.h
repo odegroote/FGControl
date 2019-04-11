@@ -6,7 +6,6 @@
 class Channel {
   public:
   Channel(int channelNr, int8_t pin);
-  Channel(int channelNr, AD9833* ad9833);
   void reset();
   bool isEnabled();
   void enable(bool flag);

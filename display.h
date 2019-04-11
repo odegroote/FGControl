@@ -14,8 +14,9 @@ class LCD {
   LCD(int nrOfChannels);
   void begin();
   void updateChannelBox(Channel* channel);
-  void setCursor(Channel* channel, CursorPosition cursorPosition, bool on);
-  CursorPosition  nextCursorPosition(CursorPosition cursorPosition);
+  void setCursor(bool on);
+  CursorPosition getCurrentCursorPosition();
+  Channel* nextCursorPosition();
   
   private:
   
@@ -26,5 +27,10 @@ class LCD {
   void showEnabled(Channel* channel);
   
   Adafruit_PCD8544* display;
+  int nrChannels;
+  Channel** channels;
+  int currentChannel;
+
+  CursorPosition currentCursorPosition;
 };
 #endif

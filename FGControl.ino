@@ -6,24 +6,20 @@
 #include "display.h"
 #include "RotaryEncoder.h"
 
-//--------------- Create an AD9833 object ---------------- 
-// Note, SCK and MOSI must be connected to CLK and DAT pins on the AD9833 for SPI
-// Defaults to 25MHz internal reference frequency
+// create 2 ad9833 channel objects
 #define FNC_PIN1 9       // Can be any digital IO pin
 Channel channel1(1, FNC_PIN1);
 #define FNC_PIN2 10       // Can be any digital IO pin
 Channel channel2(2, FNC_PIN2);
-// contains the current channel operations should be preformd on
+// contains the current channel operations should be performed on
 Channel* currentChannel = &channel1;
 
-// create a displaylayout for 2 channels
+// create a displaylayout for the 2 channels
 LCD lcd(2);
-// Let's put the current cursor position to channel-enable
-CursorPosition currentCursorPosition = channel;
+
 bool cursorOn = false;
 unsigned long startTimeCursor=0;
-void nextValue(Channel* chan, CursorPosition cursorPosition);
-void previousValue(Channel* chan, CursorPosition cursorPosition);
+void updateValue(Channel* chan, bool up);
 
 Encoder encoder(2, A5, A0);
 
@@ -52,23 +48,13 @@ void loop() {
     {
       cursorOn = true;
     } else {
-      lcd.setCursor(currentChannel, currentCursorPosition, false);
-      CursorPosition newCursorPosition = lcd.nextCursorPosition(currentCursorPosition);
-      if (newCursorPosition <= currentCursorPosition) {
-        currentChannel = (currentChannel == &channel1 ? &channel2 : &channel1);
-      }
-      currentCursorPosition = newCursorPosition;
+      currentChannel = lcd.nextCursorPosition();
     }
-    Serial.print("SetCursor:");Serial.print(currentCursorPosition);Serial.print(" ");Serial.println(cursorOn);
   } else if (cursorOn) {
     int rotaryDelta = encoder.getRotaryDelta();
     if (rotaryDelta!=0) {
       startTimeCursor = millis();
-      if (rotaryDelta > 0) {
-        nextValue(currentChannel, currentCursorPosition);
-      } else {
-        previousValue(currentChannel, currentCursorPosition);        
-      }
+      updateValue(currentChannel, rotaryDelta > 0);
     }
   }
 
@@ -76,16 +62,21 @@ void loop() {
     cursorOn = false;
   }
   
-  lcd.setCursor(currentChannel, currentCursorPosition, cursorOn);  
+  lcd.setCursor(cursorOn);  
 }
 
-void nextValue(Channel* chan, CursorPosition cursorPosition)
+void updateValue(Channel* chan, bool up)
 {  
+  CursorPosition cursorPosition = lcd.getCurrentCursorPosition();
   switch(cursorPosition) {
     case channel:
       chan->toggleEnable();
+      break;
     case shape:
-      chan->setNextWaveForm();
+      if (up)
+        chan->setNextWaveForm();
+      else
+        chan->setPreviousWaveForm();
       break;
     case freq1:
     case freq10:
@@ -93,26 +84,7 @@ void nextValue(Channel* chan, CursorPosition cursorPosition)
     case freq1000:
     case freq10000:
     case freq100000:
-      chan->setFrequency(chan->getFrequency()+pow(10, currentCursorPosition - freq1));
-      break;
-  }
-}
-
-void previousValue(Channel* chan, CursorPosition cursorPosition)
-{  
-  switch(cursorPosition) {
-    case channel:
-      chan->toggleEnable();
-    case shape:
-      chan->setPreviousWaveForm();
-      break;
-    case freq1:
-    case freq10:
-    case freq100:
-    case freq1000:
-    case freq10000:
-    case freq100000:
-      chan->setFrequency(chan->getFrequency()-pow(10, currentCursorPosition - freq1));
+      chan->setFrequency(chan->getFrequency()+(up ? 1 : -1) * pow(10, cursorPosition - freq1));
       break;
   }
 }
