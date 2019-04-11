@@ -23,6 +23,7 @@ class Encoder {
     void update ();
     long getPosition ();
     void setPosition(const long p);
+    int  getRotaryDelta();
 
     int readButton();
 
@@ -40,6 +41,9 @@ class Encoder {
   // milliseconds, will quickly become a bigger number than can be stored in an int.
   unsigned long lastDebounceTime;  // the last time the output pin was toggled
   unsigned long debounceDelay;    // the debounce time; increase if the output flickers
+
+  bool seenButtonUp;
+  long rotaryPosition;
 };
 
 #endif // __ENCODER_H__

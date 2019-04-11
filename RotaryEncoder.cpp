@@ -8,11 +8,14 @@ Encoder::Encoder( int8_t PinA, int8_t PinB, int8_t buttonPin) : pin_a ( PinA), p
 
   pinMode(pin_button, INPUT_PULLUP);
 
-  lastButtonState = LOW;   // the previous reading from the input pin
+  lastButtonState = HIGH;   // the previous reading from the input pin
   // the following variables are unsigned longs because the time, measured in
   // milliseconds, will quickly become a bigger number than can be stored in an int.
   lastDebounceTime = 0;  // the last time the output pin was toggled
   debounceDelay = 50;    // the debounce time; increase if the output flickers
+
+  seenButtonUp = true;
+  rotaryPosition = position = 0;
 };
 
 void Encoder::update() {
@@ -53,6 +56,21 @@ int Encoder::readButton()
   // save the reading. Next time through the loop, it'll be the lastButtonState:
   lastButtonState = reading;
 
-  return buttonState;    
+  // we want to see a button up before signaling a button down again
+  if (buttonState == HIGH) {
+    seenButtonUp = true;
+  } else if (seenButtonUp) {
+      seenButtonUp = false;
+      return LOW;
+  }
+  return HIGH; 
+}
+
+int Encoder::getRotaryDelta() 
+{
+  long lastPosition = rotaryPosition;
+  rotaryPosition = getPosition();
+  int diff = rotaryPosition - lastPosition;
+  return diff >= 0 ? (diff > 0 ? 1 : 0) : -1;
 }
 

@@ -6,7 +6,7 @@ settings of two AD9833 DDS functiongenerators. The currently supported settings
 are:
 
 	enable/disable
-	wvaeform
+	waveform
 	frequency
 	
 The settings for the two AD9833 are displayed on a NOKIA 5110 display.

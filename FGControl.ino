@@ -26,8 +26,6 @@ void nextValue(Channel* chan, CursorPosition cursorPosition);
 void previousValue(Channel* chan, CursorPosition cursorPosition);
 
 Encoder encoder(2, A5, A0);
-unsigned long rotaryPosition = 0;
-bool buttonUp = true;
 
 void doEncoder(){
     encoder.update();
@@ -35,28 +33,24 @@ void doEncoder(){
 
 void setup() {
   Serial.begin(9600); 
-  lcd.begin();
 
+  lcd.begin();
   channel1.setSignal(SINE_WAVE,1000);
   lcd.updateChannelBox(&channel1);
   channel2.setSignal(SINE_WAVE,1000);
   lcd.updateChannelBox(&channel2);
 
-  attachInterrupt(0, doEncoder, FALLING);
+  attachInterrupt( digitalPinToInterrupt(2), doEncoder, FALLING);
 
   Serial.println("initialized");
 }
 
 void loop() {
-  if (encoder.readButton() == HIGH) {
-    buttonUp = true;
-  } 
-  if (buttonUp && encoder.readButton() == LOW) {
+  if (encoder.readButton() == LOW) {
     startTimeCursor = millis();
-    buttonUp = false;
     if (!cursorOn)
     {
-        cursorOn = true;
+      cursorOn = true;
     } else {
       lcd.setCursor(currentChannel, currentCursorPosition, false);
       CursorPosition newCursorPosition = lcd.nextCursorPosition(currentCursorPosition);
@@ -66,16 +60,16 @@ void loop() {
       currentCursorPosition = newCursorPosition;
     }
     Serial.print("SetCursor:");Serial.print(currentCursorPosition);Serial.print(" ");Serial.println(cursorOn);
-  } else if (encoder.getPosition() != rotaryPosition) {
-    if (cursorOn) {
+  } else if (cursorOn) {
+    int rotaryDelta = encoder.getRotaryDelta();
+    if (rotaryDelta!=0) {
       startTimeCursor = millis();
-      if (encoder.getPosition() > rotaryPosition) {
+      if (rotaryDelta > 0) {
         nextValue(currentChannel, currentCursorPosition);
       } else {
         previousValue(currentChannel, currentCursorPosition);        
       }
     }
-    rotaryPosition = encoder.getPosition();
   }
 
   if (millis() - startTimeCursor > 10000) {
